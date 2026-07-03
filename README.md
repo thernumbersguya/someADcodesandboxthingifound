@@ -1,2 +1,2 @@
-# someADcodesandboxthingifound
-idk mate the original is ngvn46.csb.app
+# Antimatter Dimensions - Aarex's Modifications
+This is my modification of Antimatter Dimensions. Some mods are ported to this mod, like NG--.
