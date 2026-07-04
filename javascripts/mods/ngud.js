@@ -325,38 +325,49 @@ function reverseDilation () {
 	}
 	if (player.meta !== undefined) player.dilation.rebuyables[4] = 0
 	resetBlackhole();
-	updateDilation();
-	updateDilationUpgradeButtons();
-	updateDilationUpgradeCosts();
-	updateExdilation()
-	giveAchievement('Time is absolute')
+	    // Safety guards to prevent layout crashes if layout functions live in missing files
+    if (typeof updateDilation === "function") updateDilation(); 
+    if (typeof updateDilationUpgradeButtons === "function") updateDilationUpgradeButtons(); 
+    if (typeof updateDilationUpgradeCosts === "function") updateDilationUpgradeCosts(); 
+    
+    updateExdilation(); 
+    if (typeof giveAchievement === "function") giveAchievement('Time is absolute');
+} 
+
+function toggleExdilaConf() { 
+    player.options.exdilationconfirm = !player.options.exdilationconfirm;
+    let btn = document.getElementById("exdilationConfirmBtn");
+    if (btn) {
+        btn.textContent = "Reverse dilation confirmation: " + (player.options.exdilationconfirm ? "ON" : "OFF");
+    }
+} 
+
+function boostDilationUpgrade(x) { 
+    player.exdilation.spent[x] = Decimal.plus(player.exdilation.spent[x] || 0, player.exdilation.unspent).round(); 
+    player.exdilation.unspent = new Decimal(0); 
+    
+    // Safety guards to prevent upgrade button interaction freeze
+    if (typeof updateDilation === "function") updateDilation(); 
+    if (typeof updateDilationUpgradeButtons === "function") updateDilationUpgradeButtons(); 
+    
+    updateExdilation(); 
+    if (x == 2 && player.aarexModifications.nguspV) {
+        if (typeof resetDilationGalaxies === "function") resetDilationGalaxies();
+    }
+} 
+
+//v1.1 
+function getD18Bonus() { 
+    let x = player.replicanti.amount.max(1).log10() / 1e3;
+    if (player.aarexModifications.nguspV) return Decimal.max(x / 20 + 1, 1);
+    if (x > 100 && player.aarexModifications.ngudpV) x = Math.log(x) * 50; //NGUd' 
+    return Decimal.pow(1.05, x);
+} 
+
+function getExdilationReq() { 
+    if (player.aarexModifications.nguspV && !player.aarexModifications.nguepV) return {ep: "1e20000", dt: 1e40};
+    return {ep: "1e10000", dt: 1e30};
 }
 
-function toggleExdilaConf() {
-	player.options.exdilationconfirm = !player.options.exdilationconfirm
-	document.getElementById("exdilationConfirmBtn").textContent = "Reverse dilation confirmation: " + (player.options.exdilationconfirm ? "ON" : "OFF")
-}
-
-function boostDilationUpgrade(x) {
-	player.exdilation.spent[x] = Decimal.plus(player.exdilation.spent[x] || 0, player.exdilation.unspent).round();
-	player.exdilation.unspent = new Decimal(0);
-	updateDilation();
-	updateDilationUpgradeButtons();
-	updateExdilation();
-	if (x == 2 && player.aarexModifications.nguspV) resetDilationGalaxies()
-}
-
-//v1.1
-function getD18Bonus() {
-	let x = player.replicanti.amount.max(1).log10() / 1e3
-	if (player.aarexModifications.nguspV) return Decimal.max(x / 20 + 1, 1)
-	if (x > 100 && player.aarexModifications.ngudpV) x = Math.log(x) * 50 //NGUd'
-	return Decimal.pow(1.05, x)
-}
-
-function getExdilationReq() {
-	if (player.aarexModifications.nguspV && !player.aarexModifications.nguepV) return {ep: "1e20000", dt: 1e40}
-	return {ep: "1e10000", dt: 1e30}
-}
 
 
