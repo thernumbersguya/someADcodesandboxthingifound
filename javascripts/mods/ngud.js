@@ -209,27 +209,52 @@ function canReverseDilation() {
 	return player.eternityPoints.gte(req.ep) && player.dilation.dilatedTime.gte(req.dt)
 }
 
-function updateExdilation() {
-	document.getElementById("xdp").style.display = "none"
-	document.getElementById("xdrow").style.display = "none"
-	document.getElementById("exdilationConfirmBtn").style.display = "none"
-	if (player.exdilation == undefined || player.aarexModifications.ngudpV) return
-	if (player.exdilation.times < 1 && !quantumed) return
-	document.getElementById("xdp").style.display = ""
-	document.getElementById("xdrow").style.display = ""
-	document.getElementById("exdilationConfirmBtn").style.display = "inline"
-	document.getElementById("exDilationAmount").textContent = shortenDimensions(player.exdilation.unspent)
-	document.getElementById("exDilationBenefit").textContent = (player.aarexModifications.nguspV ? exDilationBenefit() * 100 : exDilationBenefit() / 0.0075).toFixed(1)
-	for (var i = 1; i <= DIL_UPG_SIZES[0]; i++) {
-		let unl = isDilUpgUnlocked("r" + i)
-		if (unl) {
-			document.getElementById("xd" + i).style.height = player.aarexModifications.nguspV ? "60px" : "50px"
-			document.getElementById("xd" + i).className = player.exdilation.unspent.eq(0) ? "dilationupgrebuyablelocked" : "dilationupgrebuyable";
-			if (player.aarexModifications.nguspV !== undefined) document.getElementById("xd" + i + "span").textContent = '+' + exDilationUpgradeStrength(i).toFixed(1) + ' free upgrades -> +' + exDilationUpgradeStrength(i,player.exdilation.unspent).toFixed(1)
-			else document.getElementById("xd" + i + "span").textContent = exDilationUpgradeStrength(i).toFixed(2) + 'x -> ' + exDilationUpgradeStrength(i,player.exdilation.unspent).toFixed(2) + 'x'
-		}
-		document.getElementById("xd"+i).style.display = unl ? "" : "none"
-	}
+function updateExdilation() { 
+    // Shield elements from crashing if they are hidden/removed under specific sub-mod combinations
+    if (document.getElementById("xdp")) document.getElementById("xdp").style.display = "none";
+    if (document.getElementById("xdrow")) document.getElementById("xdrow").style.display = "none";
+    if (document.getElementById("exdilationConfirmBtn")) document.getElementById("exdilationConfirmBtn").style.display = "none";
+    
+    if (player.exdilation == undefined || player.aarexModifications.ngudpV) return;
+    if (player.exdilation.times < 1 && !quantumed) return;
+    
+    if (document.getElementById("xdp")) document.getElementById("xdp").style.display = "";
+    if (document.getElementById("xdrow")) document.getElementById("xdrow").style.display = "";
+    if (document.getElementById("exdilationConfirmBtn")) document.getElementById("exdilationConfirmBtn").style.display = "inline";
+    
+    if (document.getElementById("exDilationAmount")) {
+        document.getElementById("exDilationAmount").textContent = shortenDimensions(player.exdilation.unspent);
+    }
+    if (document.getElementById("exDilationBenefit")) {
+        document.getElementById("exDilationBenefit").textContent = (player.aarexModifications.nguspV ? exDilationBenefit() * 100 : exDilationBenefit() / 0.0075).toFixed(1);
+    }
+    
+    // Check if DIL_UPG_SIZES is an array or a primitive number to prevent index crashes
+    let loopSize = Array.isArray(DIL_UPG_SIZES) ? DIL_UPG_SIZES[0] : DIL_UPG_SIZES;
+    
+    for (var i = 1; i <= loopSize; i++) { 
+        let unl = isDilUpgUnlocked("r" + i);
+        let element = document.getElementById("xd" + i);
+        
+        // Safety shield: Only run mutations if the HTML button actually exists
+        if (element) {
+            if (unl) { 
+                element.style.height = player.aarexModifications.nguspV ? "60px" : "50px";
+                element.className = player.exdilation.unspent.eq(0) ? "dilationupgrebuyablelocked" : "dilationupgrebuyable";
+                
+                let spanElement = document.getElementById("xd" + i + "span");
+                if (spanElement) {
+                    if (player.aarexModifications.nguspV !== undefined) {
+                        spanElement.textContent = '+' + exDilationUpgradeStrength(i).toFixed(1) + ' free upgrades -> +' + exDilationUpgradeStrength(i, player.exdilation.unspent).toFixed(1);
+                    } else {
+                        spanElement.textContent = exDilationUpgradeStrength(i).toFixed(2) + 'x -> ' + exDilationUpgradeStrength(i, player.exdilation.unspent).toFixed(2) + 'x';
+                    }
+                }
+            } 
+            // Move this inside the safeguard so it never reads .style of null
+            element.style.display = unl ? "" : "none";
+        }
+    } 
 }
 
 function getExDilationGain() {
