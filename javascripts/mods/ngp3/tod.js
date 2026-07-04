@@ -721,4 +721,4 @@ function getBranchUpgMult(branch, upg) {
 		if (l > s) l = s * Math.sqrt(l / s)
 		return Decimal.pow(4, l)
 	}
-} 
+}
