@@ -1,5 +1,12 @@
 function getLogTotalSpin() { 
-    return tmp.qu.tod.r.spin.plus(tmp.qu.tod.b.spin).plus(tmp.qu.tod.g.spin).add(1).log10() 
+    // Shield against initialization states where Tree of Decay layers aren't built yet
+    if (!tmp || !tmp.qu || !tmp.qu.tod || !tmp.qu.tod.r || !tmp.qu.tod.g || !tmp.qu.tod.b) return 0;
+    
+    let rSpin = new Decimal(tmp.qu.tod.r.spin);
+    let gSpin = new Decimal(tmp.qu.tod.g.spin);
+    let bSpin = new Decimal(tmp.qu.tod.b.spin);
+    
+    return rSpin.plus(gSpin).plus(bSpin).add(1).log10();
 } 
 
 function updateToDSpeedDisplay(){ 
@@ -8,7 +15,7 @@ function updateToDSpeedDisplay(){
     else t = "Branch speed: " + (todspeed == 1 ? "" : shorten(tmp.branchSpeed) + " * " + shorten(todspeed) + " = ") + shorten(getBranchFinalSpeed()) + "x" + " (hold shift for details)" 
     
     let el = document.getElementById("todspeed");
-    if (el) el.textContent = t;
+    if (el) el.textContent = t; 
 } 
 
 function getTreeUpgradeEfficiencyDisplayText(){ 
@@ -22,58 +29,85 @@ function updateTreeOfDecayTab(){
     var colors = ["red", "green", "blue"] 
     var shorthands = ["r", "g", "b"] 
     
-    if (document.getElementById("redBranch") && document.getElementById("redBranch").style.display == "block") branchNum = 1 
-    if (document.getElementById("greenBranch") && document.getElementById("greenBranch").style.display == "block") branchNum = 2 
-    if (document.getElementById("blueBranch") && document.getElementById("blueBranch").style.display == "block") branchNum = 3 
+    let redEl = document.getElementById("redBranch");
+    let greenEl = document.getElementById("greenBranch");
+    let blueEl = document.getElementById("blueBranch");
+    
+    if (redEl && redEl.style.display == "block") branchNum = 1 
+    if (greenEl && greenEl.style.display == "block") branchNum = 2 
+    if (blueEl && blueEl.style.display == "block") branchNum = 3 
     
     for (var c = 0; c < 3; c++) { 
         var color = colors[c] 
         var shorthand = shorthands[c] 
         var branch = tmp.qu.tod[shorthand] 
+        
+        // Force properties to Decimals so math methods don't crash
+        branch.spin = new Decimal(branch.spin);
+        branch.quarks = new Decimal(branch.quarks);
+        
         var name = color + " " + getUQName(shorthand) + " quarks" 
         var rate = getDecayRate(shorthand) 
         var linear = Decimal.pow(2, getRDPower(shorthand)) 
         
-        if (document.getElementById(color + "UnstableGain")) {
-            document.getElementById(color + "UnstableGain").className = tmp.qu.usedQuarks[shorthand].gt(0) && getUnstableGain(shorthand).gt(branch.quarks) ? "storebtn" : "unavailablebtn" 
-            document.getElementById(color + "UnstableGain").textContent = "Gain " + shortenMoney(getUnstableGain(shorthand)) + " " + name + (player.ghostify.milestones > 3 ? "." : ", but lose all your " + color + " quarks.") 
+        let elGain = document.getElementById(color + "UnstableGain");
+        if (elGain) {
+            elGain.className = tmp.qu.usedQuarks[shorthand].gt(0) && getUnstableGain(shorthand).gt(branch.quarks) ? "storebtn" : "unavailablebtn" 
+            elGain.textContent = "Gain " + shortenMoney(getUnstableGain(shorthand)) + " " + name + (player.ghostify.milestones > 3 ? "." : ", but lose all your " + color + " quarks.") 
         }
-        if (document.getElementById(color + "QuarkSpin")) document.getElementById(color + "QuarkSpin").textContent = shortenMoney(branch.spin) 
-        if (document.getElementById(color + "UnstableQuarks")) document.getElementById(color + "UnstableQuarks").textContent = shortenMoney(branch.quarks) 
         
-        if (document.getElementById(color + "QuarksDecayRate")) {
-            document.getElementById(color + "QuarksDecayRate").textContent = branch.quarks.lt(linear) && rate.lt(1) ? "You are losing " + shorten(linear.times(rate)) + " " + name + " per second" : "Their half-life is " + timeDisplayShort(Decimal.div(10,rate), true, 2) + (linear.eq(1) ? "" : " until their amount reaches " + shorten(linear)) 
+        let elSpin = document.getElementById(color + "QuarkSpin");
+        if (elSpin) elSpin.textContent = shortenMoney(branch.spin);
+        
+        let elQuarks = document.getElementById(color + "UnstableQuarks");
+        if (elQuarks) elQuarks.textContent = shortenMoney(branch.quarks);
+        
+        let elDecayRate = document.getElementById(color + "QuarksDecayRate");
+        if (elDecayRate) {
+            elDecayRate.textContent = branch.quarks.lt(linear) && rate.lt(1) ? "You are losing " + shorten(linear.times(rate)) + " " + name + " per second" : "Their half-life is " + timeDisplayShort(Decimal.div(10,rate), true, 2) + (linear.eq(1) ? "" : " until their amount reaches " + shorten(linear)) 
         }
-        if (document.getElementById(color + "QuarksDecayTime")) {
-            document.getElementById(color + "QuarksDecayTime").textContent = timeDisplayShort(Decimal.div(10, rate).times(branch.quarks.gt(linear) ? branch.quarks.div(linear).log(2) + 1 : branch.quarks.div(linear))) 
+        
+        let elDecayTime = document.getElementById(color + "QuarksDecayTime");
+        if (elDecayTime) {
+            elDecayTime.textContent = timeDisplayShort(Decimal.div(10, rate).times(branch.quarks.gt(linear) ? branch.quarks.div(linear).log(2) + 1 : branch.quarks.div(linear))) 
         }
-        if (document.getElementById(color + "QuarkSpinProduction")) {
+        
+        let elSpinProd = document.getElementById(color + "QuarkSpinProduction");
+        if (elSpinProd) {
             let ret = getQuarkSpinProduction(shorthand) 
-            document.getElementById(color + "QuarkSpinProduction").textContent = "+" + shortenMoney(ret) + "/s" 
+            elSpinProd.textContent = "+" + shortenMoney(ret) + "/s" 
         }
         
         if (branchNum == c + 1) { 
             var decays = getRadioactiveDecays(shorthand) 
             var power = Math.floor(getBU1Power(shorthand) / 120 + 1) 
-            if (document.getElementById(color + "UpgPow1")) document.getElementById(color + "UpgPow1").textContent = tmp.ngp3c?"more":((decays || power > 1 ? shorten(Decimal.pow(2, (1 + decays * .1) / power)) : 2)+"x") 
-            if (document.getElementById(color + "UpgSpeed1")) document.getElementById(color + "UpgSpeed1").textContent = tmp.ngp3c?"":((decays > 2 || power > 1 ? shorten(Decimal.pow(2, Math.max(.8 + decays * .1, 1) / power)) : 2)+"x") 
+            
+            let elPow1 = document.getElementById(color + "UpgPow1");
+            if (elPow1) elPow1.textContent = tmp.ngp3c?"more":((decays || power > 1 ? shorten(Decimal.pow(2, (1 + decays * .1) / power)) : 2)+"x") 
+            
+            let elSpeed1 = document.getElementById(color + "UpgSpeed1");
+            if (elSpeed1) elSpeed1.textContent = tmp.ngp3c?"":((decays > 2 || power > 1 ? shorten(Decimal.pow(2, Math.max(.8 + decays * .1, 1) / power)) : 2)+"x") 
             
             lvl = getBranchUpgLevel(shorthand, 3) 
             let s = getBranchUpg3SoftcapStart() 
             if (lvl >= s) eff = Decimal.pow(4, (Math.sqrt((lvl + 1) / s) - Math.sqrt(lvl / s)) * s).toFixed(2) 
             else eff = "4" 
-            if (document.getElementById(color + "UpgEffDesc")) document.getElementById(color + "UpgEffDesc").textContent = " " + eff + "x" 
+            
+            let elEffDesc = document.getElementById(color + "UpgEffDesc");
+            if (elEffDesc) elEffDesc.textContent = " " + eff + "x" 
             
             for (var u = 1; u < 4; u++) {
-                let upgEl = document.getElementById(color + "upg" + u);
-                if (upgEl) upgEl.className = "gluonupgrade " + (branch.spin.lt(getBranchUpgCost(shorthand, u)) ? "unavailablebtn" : shorthand) 
+                let elUpg = document.getElementById(color + "upg" + u);
+                if (elUpg) elUpg.className = "gluonupgrade " + (branch.spin.lt(getBranchUpgCost(shorthand, u)) ? "unavailablebtn" : shorthand) 
             }
-            if (ghostified && document.getElementById(shorthand+"RadioactiveDecay")) {
-                document.getElementById(shorthand+"RadioactiveDecay").className = "gluonupgrade " +(branch.quarks.lt(Decimal.pow(10, Math.pow(2, 50))) ? "unavailablebtn" : shorthand) 
-            }
+            
+            let elRadioDecay = document.getElementById(shorthand+"RadioactiveDecay");
+            if (ghostified && elRadioDecay) { 
+                elRadioDecay.className = "gluonupgrade " +(branch.quarks.lt(Decimal.pow(10, Math.pow(2, 50))) ? "unavailablebtn" : shorthand) 
+            } 
         } 
     } 
-
+    
     if (!branchNum) { 
         var start = getLogTotalSpin() > 200 ? "" : "Cost: " 
         var end = getLogTotalSpin() > 200 ? "" : " quark spin" 
@@ -83,12 +117,18 @@ function updateTreeOfDecayTab(){
         
         for (var u = 1; u <= (tmp.ngp3c?12:8); u++) { 
             var lvl = getTreeUpgradeLevel(u) 
-            let upgMain = document.getElementById("treeupg" + u);
-            if (upgMain) {
-                upgMain.className = "gluonupgrade " + (canBuyTreeUpg(u) ? shorthands[getTreeUpgradeLevel(u) % 3] : "unavailablebtn") 
-                if (document.getElementById("treeupg" + u + "current")) document.getElementById("treeupg" + u + "current").textContent = getTreeUpgradeEffectDesc(u) 
-                if (document.getElementById("treeupg" + u + "lvl")) document.getElementById("treeupg" + u + "lvl").textContent = getFullExpansion(lvl) + (tmp.tue > 1 ? " -> " + getFullExpansion(Math.floor(lvl * tmp.tue)) : "") 
-                if (document.getElementById("treeupg" + u + "cost")) document.getElementById("treeupg" + u + "cost").textContent = start + shortenMoney(getTreeUpgradeCost(u)) + " " + colors[lvl % 3] + end 
+            let elTreeUpg = document.getElementById("treeupg" + u);
+            if (elTreeUpg) {
+                elTreeUpg.className = "gluonupgrade " + (canBuyTreeUpg(u) ? shorthands[getTreeUpgradeLevel(u) % 3] : "unavailablebtn") 
+                
+                let elCurrent = document.getElementById("treeupg" + u + "current");
+                if (elCurrent) elCurrent.textContent = getTreeUpgradeEffectDesc(u) 
+                
+                let elLvl = document.getElementById("treeupg" + u + "lvl");
+                if (elLvl) elLvl.textContent = getFullExpansion(lvl) + (tmp.tue > 1 ? " -> " + getFullExpansion(Math.floor(lvl * tmp.tue)) : "") 
+                
+                let elCost = document.getElementById("treeupg" + u + "cost");
+                if (elCost) elCost.textContent = start + shortenMoney(getTreeUpgradeCost(u)) + " " + colors[lvl % 3] + end 
             }
         } 
         setAndMaybeShow("treeUpgradeEff", ghostified, 'getTreeUpgradeEfficiencyDisplayText()') 
@@ -97,11 +137,15 @@ function updateTreeOfDecayTab(){
 } 
 
 function updateTODStuff() { 
+    // Safety check if sub-mods haven't loaded the properties yet
+    if (!tmp || !tmp.qu || !tmp.qu.tod) return;
+
+    let elBtn = document.getElementById("todtabbtn");
     if (player.masterystudies ? !player.masterystudies.includes("d13") : true) { 
-        if (document.getElementById("todtabbtn")) document.getElementById("todtabbtn").style.display = "none" 
+        if (elBtn) elBtn.style.display = "none" 
         return 
     } else { 
-        if (document.getElementById("todtabbtn")) document.getElementById("todtabbtn").style.display = "" 
+        if (elBtn) elBtn.style.display = "" 
     } 
     
     var colors = ["red", "green", "blue"] 
@@ -112,18 +156,15 @@ function updateTODStuff() {
         var shorthand = shorthands[c] 
         var branch = tmp.qu.tod[shorthand] 
         
-        // GUARD: Force spin to be a Decimal object if it loaded as a primitive number
-        if (!(branch.spin instanceof Decimal)) {
-            branch.spin = new Decimal(branch.spin);
-        }
+        // FORCE TYPE CASTING: Re-instantiate as true Decimal object
+        branch.spin = new Decimal(branch.spin);
         
         var name = getUQName(shorthand) 
-        if (document.getElementById(shorthand+"UQName")) {
-            document.getElementById(shorthand+"UQName").textContent = name 
-        }
+        let elUqName = document.getElementById(shorthand+"UQName");
+        if (elUqName) elUqName.textContent = name 
         
-        // This log10 check will run flawlessly now!
-        let extra = branch.spin.log10() > 200 
+        // SAFE: branch.spin is guaranteed to have .log10() now!
+        extra = branch.spin.log10() > 200
         let start = extra ? "" : "Cost: " 
         let end = extra ? color : color + " quark spin" 
         
