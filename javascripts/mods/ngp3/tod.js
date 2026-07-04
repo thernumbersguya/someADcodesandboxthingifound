@@ -103,33 +103,58 @@ function updateTODStuff() {
     } else { 
         if (document.getElementById("todtabbtn")) document.getElementById("todtabbtn").style.display = "" 
     } 
+    
     var colors = ["red", "green", "blue"] 
     var shorthands = ["r", "g", "b"] 
+    
     for (var c = 0; c < 3; c++) { 
         var color = colors[c] 
         var shorthand = shorthands[c] 
         var branch = tmp.qu.tod[shorthand] 
+        
+        // GUARD: Force spin to be a Decimal object if it loaded as a primitive number
+        if (!(branch.spin instanceof Decimal)) {
+            branch.spin = new Decimal(branch.spin);
+        }
+        
         var name = getUQName(shorthand) 
-        if (document.getElementById(shorthand+"UQName")) document.getElementById(shorthand+"UQName").textContent = name 
-        extra = branch.spin.log10() > 200 
-        start = extra ? "" : "Cost: " 
-        end = extra ? color : color + " quark spin" 
+        if (document.getElementById(shorthand+"UQName")) {
+            document.getElementById(shorthand+"UQName").textContent = name 
+        }
+        
+        // This log10 check will run flawlessly now!
+        let extra = branch.spin.log10() > 200 
+        let start = extra ? "" : "Cost: " 
+        let end = extra ? color : color + " quark spin" 
+        
         for (var b = 1; b < 4; b++) { 
-            if (document.getElementById(color + "upg" + b + "current")) document.getElementById(color + "upg" + b + "current").textContent = shortenDimensions(getBranchUpgMult(shorthand, b)) 
-            if (document.getElementById(color + "upg" + b + "cost")) document.getElementById(color + "upg" + b + "cost").textContent = start + shortenMoney(getBranchUpgCost(shorthand, b)) + " " + end 
-            if (b > 1 && document.getElementById(color + "UpgName" + b)) document.getElementById(color + "UpgName" + b).textContent=name 
+            if (document.getElementById(color + "upg" + b + "current")) {
+                document.getElementById(color + "upg" + b + "current").textContent = shortenDimensions(getBranchUpgMult(shorthand, b)) 
+            }
+            if (document.getElementById(color + "upg" + b + "cost")) {
+                document.getElementById(color + "upg" + b + "cost").textContent = start + shortenMoney(getBranchUpgCost(shorthand, b)) + " " + end 
+            }
+            if (b > 1 && document.getElementById(color + "UpgName" + b)) {
+                document.getElementById(color + "UpgName" + b).textContent = name 
+            }
         } 
+        
         if (ghostified && document.getElementById(shorthand+"RadioactiveDecay")) { 
             let p1 = document.getElementById(shorthand+"RadioactiveDecay").parentElement;
             if (p1 && p1.parentElement) p1.parentElement.style.display = "";
-            if (document.getElementById(shorthand+"RDReq")) document.getElementById(shorthand+"RDReq").textContent = "(requires "+shorten(Decimal.pow(10, Math.pow(2, 50))) + " of " + color + " " + getUQName(shorthand) + " quarks)" 
-            if (document.getElementById(shorthand+"RDLvl")) document.getElementById(shorthand+"RDLvl").textContent = getFullExpansion(getRadioactiveDecays(shorthand)) 
+            if (document.getElementById(shorthand+"RDReq")) {
+                document.getElementById(shorthand+"RDReq").textContent = "(requires " + shorten(Decimal.pow(10, Math.pow(2, 50))) + " of " + color + " " + getUQName(shorthand) + " quarks)" 
+            }
+            if (document.getElementById(shorthand+"RDLvl")) {
+                document.getElementById(shorthand+"RDLvl").textContent = getFullExpansion(getRadioactiveDecays(shorthand)) 
+            }
         } else if (document.getElementById(shorthand+"RadioactiveDecay")) {
             let p1 = document.getElementById(shorthand+"RadioactiveDecay").parentElement;
             if (p1 && p1.parentElement) p1.parentElement.style.display = "none";
         }
     } 
-} 
+}
+ 
 
 function showBranchTab(tabName) { 
     var tabs = document.getElementsByClassName('branchtab'); 
