@@ -195,85 +195,99 @@ function updateTODStuff() {
         }
     } 
 }
- 
 
 function showBranchTab(tabName) { 
     var tabs = document.getElementsByClassName('branchtab'); 
     var tab; 
-    var oldTab 
+    var oldTab;
     for (var i = 0; i < tabs.length; i++) { 
         tab = tabs.item(i); 
-        if (tab.style.display == 'block') oldTab = tab.id 
+        if (tab.style.display == 'block') oldTab = tab.id;
         if (tab.id === tabName + "Branch") { 
             tab.style.display = 'block'; 
         } else { 
             tab.style.display = 'none'; 
         } 
     } 
-    if (oldTab !== tabName) player.aarexModifications.tabsSave.tabBranch = tabName 
-    if (typeof closeToolTip === "function") closeToolTip() 
+    if (oldTab !== tabName) player.aarexModifications.tabsSave.tabBranch = tabName;
+    if (typeof closeToolTip === "function") closeToolTip();
 } 
 
 function getUnstableGainDiv(over=false) { 
-    if (tmp.ngp3c) return (player.ghostify.milestones > 7 && tmp.ngp3c)?"100":"1e80" 
-    else return over?"1e420":"1e300" 
+    if (tmp.ngp3c) return (player.ghostify.milestones > 7 && tmp.ngp3c)?"100":"1e80";
+    else return over?"1e420":"1e300";
 } 
 
 function getRDNegPower(branch) { 
     let power = getRDPower(branch); 
-    if (typeof hasBDUpg === "function" && hasBDUpg(4)) power /= tmp.bdt.upgs[4].rd+1 
-    return power; 
+    if (typeof hasBDUpg === "function" && hasBDUpg(4)) power /= tmp.bdt.upgs[4].rd+1;
+    return power;
 } 
 
 function getUnstableGain(branch) { 
-    let ret = tmp.qu.usedQuarks[branch].div(getUnstableGainDiv(true)).add(1).log10() 
-    if (ret < 2 && !tmp.ngp3c) ret = Math.max(tmp.qu.usedQuarks[branch].div(getUnstableGainDiv()).div(99).log10() / 60,0) 
-    let power = getBU2Power(branch) - getRDNegPower(branch) 
+    let ret = tmp.qu.usedQuarks[branch].div(getUnstableGainDiv(true)).add(1).log10();
+    if (ret < 2 && !tmp.ngp3c) ret = Math.max(tmp.qu.usedQuarks[branch].div(getUnstableGainDiv()).div(99).log10() / 60,0);
+    let power = getBU2Power(branch) - getRDNegPower(branch);
+    ret = Decimal.pow(2, power).times(ret);
+    if (ret.gt(1)) ret = Decimal.pow(ret, Math.pow(2, power + 1));
+    return ret.times(Decimal.pow(2, getRDPower(branch) + 1)).min(Decimal.pow(10, Math.pow(2, 51)));
+} 
 
+function unstableQuarks(branch) { 
+    if (tmp.qu.usedQuarks[branch].eq(0) || getUnstableGain(branch).lte(tmp.qu.tod[branch].quarks)) return;
+    tmp.qu.tod[branch].quarks = tmp.qu.tod[branch].quarks.max(getUnstableGain(branch));
+    if (player.ghostify.milestones < 4) { 
+        tmp.qu.usedQuarks[branch] = new Decimal(0);
+        if (typeof updateColorCharge === "function") updateColorCharge(); 
+        updateTODStuff(); 
+    } 
+    if (player.ghostify.reference > 0) player.ghostify.reference--;
+    if (player.unstableThisGhostify) player.unstableThisGhostify ++;
+    else player.unstableThisGhostify = 10;
+} 
 
+function getBranchSpeedText(){ 
+    let text = "";
+    if (new Decimal(getTreeUpgradeEffect(3)).gt(1)) text += "Tree Upgrade 3: " + shorten(getTreeUpgradeEffect(3)) + "x, ";
+    if (new Decimal(getTreeUpgradeEffect(5)).gt(1)) text += "Tree Upgrade 5: " + shorten(getTreeUpgradeEffect(5)) + "x, ";
+    if (player.masterystudies.includes("t431")) {
+        if (getMTSMult(431).gt(1)) text += "Mastery Study 431: " + shorten(getMTSMult(431)) + "x, ";
+    }
+    if (tmp.qu.bigRip.active && isBigRipUpgradeActive(19)) text += "19th Big Rip upgrade: " + shorten(tmp.bru) + "x, ";
+    if (typeof hasNU === "function" && hasNU(4)) {
+        if (tmp.nu.gt(1)) text += "Fourth Neutrino Upgrade: " + shorten(tmp.nu) + "x, ";
+    }
+    if (typeof hasNU === "function" && hasNU(15)) {
+        if (tmp.nu.gt(1)) text += "Fifteenth Neutrino Upgrade: " + shorten(tmp.nu) + "x, ";
+    }
+    if (!tmp.ngp3l) { 
+        if (player.achievements.includes("ng3p48")) {
+            if (player.meta.resets > 1) text += "'Are you currently dying?' reward: " + shorten (Math.sqrt(player.meta.resets + 1)) + "x, ";
+        }
+    } 
+    if (player.ghostify.milestones >= 14) text += "Brave Milestone 14: " + shorten(getMilestone14SpinMult()) + "x, ";
+    if (player.achievements.includes("ng3p61") && tmp.ngp3c) text += "Ghostify Bonus: 5x, ";
+    if (todspeed) {
+        if (todspeed > 1) text += "ToD Speed: " + shorten(todspeed) + "x, ";
+    }
+    if (text == "") return "No multipliers currently";
+    return text.slice(0, text.length-2);
+} 
 
-function unstableQuarks(branch) {
-	if (tmp.qu.usedQuarks[branch].eq(0) || getUnstableGain(branch).lte(tmp.qu.tod[branch].quarks)) return
-	tmp.qu.tod[branch].quarks = tmp.qu.tod[branch].quarks.max(getUnstableGain(branch))
-	if (player.ghostify.milestones < 4) {
-		tmp.qu.usedQuarks[branch] = new Decimal(0)
-		updateColorCharge();
-		updateTODStuff();
-	}
-	if (player.ghostify.reference > 0) player.ghostify.reference--
-	if (player.unstableThisGhostify) player.unstableThisGhostify ++
-	else player.unstableThisGhostify = 10
+function getBranchSpeed() { 
+    let x = Decimal.times(getTreeUpgradeEffect(3), getTreeUpgradeEffect(5));
+    if (player.masterystudies.includes("t431")) x = x.times(getMTSMult(431));
+    if (tmp.qu.bigRip.active && isBigRipUpgradeActive(19)) x = x.times(tmp.bru);
+    if (typeof hasNU === "function" && hasNU(4)) x = x.times(tmp.nu);
+    if (!tmp.ngp3l) { 
+        if (player.achievements.includes("ng3p48")) x = x.times(Math.sqrt(player.meta.resets + 1));
+    } 
+    if (player.ghostify.milestones >= 14) x = x.times(getMilestone14SpinMult());
+    if (player.achievements.includes("ng3p61") && tmp.ngp3c) x = x.times(5);
+    if (typeof hasNU === "function" && hasNU(15)) x = x.times(tmp.nu);
+    return x;
 }
 
-function getBranchSpeedText(){
-	let text = ""
-	if (new Decimal(getTreeUpgradeEffect(3)).gt(1)) text += "Tree Upgrade 3: " + shorten(getTreeUpgradeEffect(3)) + "x, "
-	if (new Decimal(getTreeUpgradeEffect(5)).gt(1)) text += "Tree Upgrade 5: " + shorten(getTreeUpgradeEffect(5)) + "x, "
-	if (player.masterystudies.includes("t431")) if (getMTSMult(431).gt(1)) text += "Mastery Study 431: " + shorten(getMTSMult(431)) + "x, "
-	if (tmp.qu.bigRip.active && isBigRipUpgradeActive(19)) text += "19th Big Rip upgrade: " + shorten(tmp.bru[19]) + "x, "
-	if (hasNU(4)) if (tmp.nu[2].gt(1)) text += "Fourth Neutrino Upgrade: " + shorten(tmp.nu[2]) + "x, "
-	if (hasNU(15)) if (tmp.nu[6].gt(1)) text += "Fifteenth Neutrino Upgrade: " + shorten(tmp.nu[6]) + "x, "
-	if (!tmp.ngp3l) if (player.achievements.includes("ng3p48")) if (player.meta.resets > 1) text += "'Are you currently dying?' reward: " + shorten (Math.sqrt(player.meta.resets + 1)) + "x, "
-	if (player.ghostify.milestones >= 14) text += "Brave Milestone 14: " + shorten(getMilestone14SpinMult()) + "x, "
-	if (player.achievements.includes("ng3p61") && tmp.ngp3c) text += "Ghostify Bonus: 5x, "
-	if (todspeed) if (todspeed > 1) text += "ToD Speed: " + shorten(todspeed) + "x, "
-	if (text == "") return "No multipliers currently"
-	return text.slice(0, text.length-2)
-}
-
-function getBranchSpeed() { // idea: when you hold shift you can see where the multipliers of branch speed are
-	let x = Decimal.times(getTreeUpgradeEffect(3), getTreeUpgradeEffect(5))
-	if (player.masterystudies.includes("t431")) x = x.times(getMTSMult(431))
-	if (tmp.qu.bigRip.active && isBigRipUpgradeActive(19)) x = x.times(tmp.bru[19])
-	if (hasNU(4)) x = x.times(tmp.nu[2])
-	if (!tmp.ngp3l) {
-		if (player.achievements.includes("ng3p48")) x = x.times(Math.sqrt(player.meta.resets + 1))
-	}
-	if (player.ghostify.milestones >= 14) x = x.times(getMilestone14SpinMult())
-	if (player.achievements.includes("ng3p61") && tmp.ngp3c) x = x.times(5);
-	if (hasNU(15)) x = x.times(tmp.nu[6]);
-	return x
-}
 
 function getBranchFinalSpeed() {
 	return tmp.branchSpeed.times(todspeed)
