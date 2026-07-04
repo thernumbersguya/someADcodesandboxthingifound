@@ -137,60 +137,60 @@ function updateTreeOfDecayTab(){
 } 
 
 function updateTODStuff() { 
-    // Safety check if sub-mods haven't loaded the properties yet
+    // Safety check if sub-mods haven't loaded the properties yet at startup
     if (!tmp || !tmp.qu || !tmp.qu.tod) return;
 
     let elBtn = document.getElementById("todtabbtn");
     if (player.masterystudies ? !player.masterystudies.includes("d13") : true) { 
-        if (elBtn) elBtn.style.display = "none" 
-        return 
+        if (elBtn) elBtn.style.display = "none";
+        return;
     } else { 
-        if (elBtn) elBtn.style.display = "" 
+        if (elBtn) elBtn.style.display = "";
     } 
     
-    var colors = ["red", "green", "blue"] 
-    var shorthands = ["r", "g", "b"] 
+    var colors = ["red", "green", "blue"]; 
+    var shorthands = ["r", "g", "b"]; 
     
     for (var c = 0; c < 3; c++) { 
-        var color = colors[c] 
-        var shorthand = shorthands[c] 
-        var branch = tmp.qu.tod[shorthand] 
+        var color = colors[c]; 
+        var shorthand = shorthands[c]; 
+        var branch = tmp.qu.tod[shorthand]; 
         
-        // FORCE TYPE CASTING: Re-instantiate as true Decimal object
+        // FORCE TYPE CASTING: Re-instantiate as true Decimal object to prevent log10 crashes
         branch.spin = new Decimal(branch.spin);
         
-        var name = getUQName(shorthand) 
-        let elUqName = document.getElementById(shorthand+"UQName");
-        if (elUqName) elUqName.textContent = name 
+        var name = getUQName(shorthand);
+        let elUqName = document.getElementById(shorthand + "UQName");
+        if (elUqName) elUqName.textContent = name;
         
         // SAFE: branch.spin is guaranteed to have .log10() now!
-        extra = branch.spin.log10() > 200
-        let start = extra ? "" : "Cost: " 
-        let end = extra ? color : color + " quark spin" 
+        let extra = branch.spin.log10() > 200;
+        let start = extra ? "" : "Cost: "; 
+        let end = extra ? color : color + " quark spin"; 
         
         for (var b = 1; b < 4; b++) { 
             if (document.getElementById(color + "upg" + b + "current")) {
-                document.getElementById(color + "upg" + b + "current").textContent = shortenDimensions(getBranchUpgMult(shorthand, b)) 
+                document.getElementById(color + "upg" + b + "current").textContent = shortenDimensions(getBranchUpgMult(shorthand, b));
             }
             if (document.getElementById(color + "upg" + b + "cost")) {
-                document.getElementById(color + "upg" + b + "cost").textContent = start + shortenMoney(getBranchUpgCost(shorthand, b)) + " " + end 
+                document.getElementById(color + "upg" + b + "cost").textContent = start + shortenMoney(getBranchUpgCost(shorthand, b)) + " " + end;
             }
             if (b > 1 && document.getElementById(color + "UpgName" + b)) {
-                document.getElementById(color + "UpgName" + b).textContent = name 
+                document.getElementById(color + "UpgName" + b).textContent = name;
             }
         } 
         
-        if (ghostified && document.getElementById(shorthand+"RadioactiveDecay")) { 
-            let p1 = document.getElementById(shorthand+"RadioactiveDecay").parentElement;
+        if (ghostified && document.getElementById(shorthand + "RadioactiveDecay")) { 
+            let p1 = document.getElementById(shorthand + "RadioactiveDecay").parentElement;
             if (p1 && p1.parentElement) p1.parentElement.style.display = "";
-            if (document.getElementById(shorthand+"RDReq")) {
-                document.getElementById(shorthand+"RDReq").textContent = "(requires " + shorten(Decimal.pow(10, Math.pow(2, 50))) + " of " + color + " " + getUQName(shorthand) + " quarks)" 
+            if (document.getElementById(shorthand + "RDReq")) {
+                document.getElementById(shorthand + "RDReq").textContent = "(requires " + shorten(Decimal.pow(10, Math.pow(2, 50))) + " of " + color + " " + getUQName(shorthand) + " quarks)";
             }
-            if (document.getElementById(shorthand+"RDLvl")) {
-                document.getElementById(shorthand+"RDLvl").textContent = getFullExpansion(getRadioactiveDecays(shorthand)) 
+            if (document.getElementById(shorthand + "RDLvl")) {
+                document.getElementById(shorthand + "RDLvl").textContent = getFullExpansion(getRadioactiveDecays(shorthand));
             }
-        } else if (document.getElementById(shorthand+"RadioactiveDecay")) {
-            let p1 = document.getElementById(shorthand+"RadioactiveDecay").parentElement;
+        } else if (document.getElementById(shorthand + "RadioactiveDecay")) {
+            let p1 = document.getElementById(shorthand + "RadioactiveDecay").parentElement;
             if (p1 && p1.parentElement) p1.parentElement.style.display = "none";
         }
     } 
