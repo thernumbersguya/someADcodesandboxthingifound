@@ -418,8 +418,8 @@ function quantumReset(force, auto, challid, bigRip, implode = false) {
 	else player.infinityPoints = new Decimal(0);
 	if (tmp.ngp3) {
 		if (!bigRip && tmp.qu.bigRip.active && force) {
-			tmp.qu.bigRip.spaceShards = tmp.qu.bigRip.spaceShards.add(getSpaceShardsGain())
-			tmp.qu.bigRip.tss = tmp.qu.bigRip.tss.add(getSpaceShardsGain())
+			tmp.qu.bigRip.spaceShards = tmp.qu.bigRip.spaceShards.add(getSpaceShardsGain());
+tmp.qu.bigRip.tss = tmp.qu.bigRip.tss.add(getSpaceShardsGain());
 			if (player.ghostify.milestones < 8) tmp.qu.bigRip.spaceShards = tmp.qu.bigRip.spaceShards.round()
 			if (player.matter.gt("1e5000")) giveAchievement("Really?")
 		}
